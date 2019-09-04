@@ -70,8 +70,76 @@ public class Painter : MonoBehaviour
             recovered.SetActive(true);
             objectStack.Push(recovered);
         }
+
+        /////////////////////////////////////////////////////////////////////
+        ///             Aumentar o disminuir el trazo (Unai)
+        ///////////////////////////////////////////////////////////////////// 
+
+        // En el caso de que movamos el Joystick derecho hacia la izquierda
+        // disminuiremos el radio de las esferas que estan siendo creadas y 
+        // que conforman el trazo
+        if (OVRInput.Get(OVRInput.Button.PrimaryThumbstickLeft))
+        {
+            Debug.Log("Izquierda Secondary");
+            if (radius - 0.002f >= 0)
+            {
+                radius = radius - 0.002f;
+
+                Debug.Log(radius);
+                Vector3 position = indexFinger.transform.position;
+                // Por otro lado, para saber el tamaño actual del trazo
+                // llamamos a la siguiente funcion, encargada de ofrecer 
+                // una vista previa del trazo que tendrá el dibujo
+                VistaPreviaEsfera(position);
+            }
+
+        }
+
+        // Por otro lado, en el caso de mover el Joystick derecho hacia la
+        // derecha, el radio de las esferas aumentará
+        if (OVRInput.Get(OVRInput.Button.PrimaryThumbstickRight))
+        {
+            //Debug.Log("Izquierda Secondary");
+            radius = radius + 0.002f;
+            Debug.Log(radius);
+            Vector3 position = indexFinger.transform.position;
+            VistaPreviaEsfera(position);
+        }
+
+  
     }
 
+    /****************************************************************************
+     * Método VistaPreviaEsfera
+     ****************************************************************************
+     * Método encargado de darnos una vista previa del grosor del trazo de nuestro
+     * "pincel".
+     * 
+     * Recibe por parámetro la posición del dedo de nuestra mano.
+     ****************************************************************************/ 
+    private void VistaPreviaEsfera(Vector3 position)
+    {
+        GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        sphere.GetComponent<Renderer>().material.color = new Color(0, 0, 1);
+        sphere.transform.localScale = new Vector3(radius, radius, radius);
+        sphere.transform.position = position;
+        StartCoroutine(DestruirVistaPrevia(sphere));
+    }
+
+    /*****************************************************************************
+     * Método DestruirVistaPrevia
+     *****************************************************************************
+     * Método encargado de eliminar la vista previa del trazo pasado unos escasos 
+     * segundos.
+     *****************************************************************************/
+    IEnumerator DestruirVistaPrevia(GameObject vistaPrevia)
+    {
+        yield return new WaitForSeconds(0.1f);
+        Destroy(vistaPrevia);
+    }
+
+
+    
     private void Paint(Vector3 position)
     {
         // Creamos la nueva esfera
