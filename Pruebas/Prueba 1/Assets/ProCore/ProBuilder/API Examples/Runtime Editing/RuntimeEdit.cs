@@ -3,6 +3,8 @@
 using UnityEngine;
 using System.Collections;
 using ProBuilder2.Common;
+using ProBuilder2.MeshOperations;
+using System.Collections.Generic;
 
 namespace ProBuilder2.Examples
 {
@@ -68,6 +70,10 @@ namespace ProBuilder2.Examples
         /************************ VARIABLES NUEVAS **************************/
         public Transform LineLeft;
         public Transform LineRight;
+
+        private bool haciendoPoligono = false;
+        List<Vector3> listaPuntos = new List<Vector3>();
+        List<GameObject> listaVertices = new List<GameObject>();
         /********************************************************************/
 
         /**
@@ -153,7 +159,7 @@ namespace ProBuilder2.Examples
 		 */
 		public void Update()
 		{
-			if(Input.GetMouseButtonUp(0) && !Input.GetKey(KeyCode.LeftAlt) || OVRInput.GetUp(OVRInput.Button.One)) {
+			if(Input.GetMouseButtonUp(0) && !Input.GetKey(KeyCode.LeftAlt) || OVRInput.GetUp(OVRInput.Button.SecondaryIndexTrigger) || OVRInput.GetUp(OVRInput.Button.PrimaryIndexTrigger)) {
 
 				if(FaceCheck(Input.mousePosition))
 				{
@@ -183,7 +189,43 @@ namespace ProBuilder2.Examples
 					}
 				}
 			}
-		}
+
+            if (OVRInput.GetUp(OVRInput.Button.Three))
+            {
+                if (!haciendoPoligono)
+                {
+                    haciendoPoligono = true;
+                }
+                Ray rayOVRLeft = new Ray(LineLeft.position, LineLeft.position + LineLeft.forward * 1000);
+                RaycastHit hitOVRLeft;
+                if (Physics.Raycast(rayOVRLeft.origin, rayOVRLeft.direction, out hitOVRLeft))
+                {
+                    Vector3 punto = hitOVRLeft.point;
+                    GameObject vertice = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    vertice.transform.position = punto;
+                    vertice.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
+                    listaPuntos.Add(punto);
+                    listaVertices.Add(vertice);
+                }
+            }
+
+            if (OVRInput.GetUp(OVRInput.Button.Four) && listaPuntos.Count>2)
+            {
+                pb_Object objetoPrueba;
+                var go = new GameObject();
+                objetoPrueba = go.gameObject.AddComponent<pb_Object>();
+                objetoPrueba.CreateShapeFromPolygon(listaPuntos, 2, false);
+                objetoPrueba.gameObject.AddComponent<MeshCollider>();
+                objetoPrueba.gameObject.GetComponent<MeshCollider>().sharedMesh = objetoPrueba.gameObject.GetComponent<MeshFilter>().mesh;
+                haciendoPoligono = false;
+                listaPuntos.Clear();
+                foreach (GameObject g in listaVertices)
+                {
+                    Destroy(g);
+                }
+                listaVertices.Clear();
+            }
+        }
 
 		/**
 		 *	\brief This is how we figure out what face is clicked.
