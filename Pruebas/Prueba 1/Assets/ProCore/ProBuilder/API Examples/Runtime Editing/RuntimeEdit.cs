@@ -16,8 +16,10 @@ namespace ProBuilder2.Examples
 	{
 		class pb_Selection
 		{
-			public pb_Object pb;	///< This is the currently selected ProBuilder object.
-			public pb_Face face;	///< Keep a reference to the currently selected face.
+			public pb_Object pb;    ///< This is the currently selected ProBuilder object.
+            public pb_PolyShape ps;
+            public pb_Face face;	///< Keep a reference to the currently selected face.
+
 
 			public pb_Selection(pb_Object _pb, pb_Face _face)
 			{
@@ -58,14 +60,20 @@ namespace ProBuilder2.Examples
 
 		pb_Selection currentSelection;
 		pb_Selection previousSelection;
-
-		private pb_Object preview;
+        
+        private pb_Object preview;
 		public Material previewMaterial;
 
-		/**
+        /********************************************************************/
+        /************************ VARIABLES NUEVAS **************************/
+        public Transform LineLeft;
+        public Transform LineRight;
+        /********************************************************************/
+
+        /**
 		 *	\brief Wake up!
 		 */
-		void Awake()
+        void Awake()
 		{
 			SpawnCube();
 		}
@@ -93,9 +101,11 @@ namespace ProBuilder2.Examples
 			// see all possible primitive types.
 			pb_Object pb = pb_ShapeGenerator.CubeGenerator(Vector3.one);
 
-			// The runtime component requires that a concave mesh collider be present in order for face selection
-			// to work.
-			pb.gameObject.AddComponent<MeshCollider>().convex = false;
+            //ProBuilder2.Common.pb_PolyShape.
+
+            // The runtime component requires that a concave mesh collider be present in order for face selection
+            // to work.
+            pb.gameObject.AddComponent<MeshCollider>().convex = false;
 
 			// Now set it to the currentSelection
 			currentSelection = new pb_Selection(pb, null);
@@ -143,7 +153,7 @@ namespace ProBuilder2.Examples
 		 */
 		public void Update()
 		{
-			if(Input.GetMouseButtonUp(0) && !Input.GetKey(KeyCode.LeftAlt)) {
+			if(Input.GetMouseButtonUp(0) && !Input.GetKey(KeyCode.LeftAlt) || OVRInput.GetUp(OVRInput.Button.One)) {
 
 				if(FaceCheck(Input.mousePosition))
 				{
@@ -183,7 +193,15 @@ namespace ProBuilder2.Examples
 			Ray ray = Camera.main.ScreenPointToRay (pos);
 			RaycastHit hit;
 
-			if( Physics.Raycast(ray.origin, ray.direction, out hit))
+            /************************** CÓDIGO NUEVO ****************************/
+            Ray rayOVRLeft = new Ray(LineLeft.position, LineLeft.position + LineLeft.forward * 1000);
+            Ray rayOVRRight = new Ray(LineRight.position, LineRight.position + LineRight.forward * 1000);
+            RaycastHit hitOVRLeft;
+            RaycastHit hitOVRRight;
+            
+            /********************************************************************/
+            
+            if ( Physics.Raycast(ray.origin, ray.direction, out hit))
 			{
 				pb_Object hitpb = hit.transform.gameObject.GetComponent<pb_Object>();
 
@@ -202,7 +220,49 @@ namespace ProBuilder2.Examples
 
 				return hitpb.FaceWithTriangle(tri, out currentSelection.face);
 			}
-			return false;
+            /************************** CÓDIGO NUEVO ****************************/
+            else if (Physics.Raycast(rayOVRLeft.origin, rayOVRLeft.direction, out hitOVRLeft))
+			{
+                Debug.Log(hitOVRLeft.point.ToString());
+                pb_Object hitpb = hitOVRLeft.transform.gameObject.GetComponent<pb_Object>();
+
+                if (hitpb == null)
+                    return false;
+
+                Mesh m = hitpb.msh;
+
+                int[] tri = new int[3] {
+                    m.triangles[hitOVRLeft.triangleIndex * 3 + 0],
+                    m.triangles[hitOVRLeft.triangleIndex * 3 + 1],
+                    m.triangles[hitOVRLeft.triangleIndex * 3 + 2]
+                };
+
+                currentSelection.pb = hitpb;
+
+                return hitpb.FaceWithTriangle(tri, out currentSelection.face);
+            }
+            else if (Physics.Raycast(rayOVRRight.origin, rayOVRRight.direction, out hitOVRRight))
+			{
+                pb_Object hitpb = hitOVRRight.transform.gameObject.GetComponent<pb_Object>();
+
+                if (hitpb == null)
+                    return false;
+
+                Mesh m = hitpb.msh;
+
+                int[] tri = new int[3] {
+                    m.triangles[hitOVRRight.triangleIndex * 3 + 0],
+                    m.triangles[hitOVRRight.triangleIndex * 3 + 1],
+                    m.triangles[hitOVRRight.triangleIndex * 3 + 2]
+                };
+
+                currentSelection.pb = hitpb;
+
+                return hitpb.FaceWithTriangle(tri, out currentSelection.face);
+            }
+            /************************************************************************/
+
+            return false;
 		}
 
 		void RefreshSelectedFacePreview()

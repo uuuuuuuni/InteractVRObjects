@@ -14,6 +14,8 @@ public class Painter : MonoBehaviour
     private Stack<GameObject> objectStack;
     private Stack<GameObject> undone;
     public GameObject indexFinger;
+    private GameObject vistaPrevia;
+    public Material materialVistaPrevia;
 
     void Start()
     {
@@ -21,6 +23,11 @@ public class Painter : MonoBehaviour
         lastSphere = null;
         objectStack = new Stack<GameObject>();
         undone = new Stack<GameObject>();
+        vistaPrevia = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        vistaPrevia.transform.localScale = new Vector3(radius, radius, radius);
+        vistaPrevia.GetComponent<Renderer>().material = materialVistaPrevia;
+        vistaPrevia.transform.position = indexFinger.transform.position;
+        vistaPrevia.transform.SetParent(indexFinger.transform);
     }
 
     // Update is called once per frame
@@ -31,19 +38,19 @@ public class Painter : MonoBehaviour
         {
             // Creamos un nuevo objeto
             currentObject = new GameObject();
-            Instantiate(currentObject);
+            //Instantiate(currentObject);
             objectStack.Push(currentObject);
             undone.Clear();
         }
 
         // Mientras el gatillo esté pulsado
-        if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger))
+        if (OVRInput.Get(OVRInput.Axis1D.PrimaryIndexTrigger)==1)
         {
             // Pintamos la esfera si la posición del mando está lo suficientemente alejada de la esfera anterior
             //Vector3 position = OVRInput.GetLocalControllerPosition(OVRInput.Controller.RTouch);
             Vector3 position = indexFinger.transform.position;
             float distance = (position - lastPosition).magnitude;
-            if (distance > radius / 5)
+            if (distance > radius / 10)
             {
                 Paint(position);
             }
@@ -71,6 +78,7 @@ public class Painter : MonoBehaviour
             objectStack.Push(recovered);
         }
 
+
         /////////////////////////////////////////////////////////////////////
         ///             Aumentar o disminuir el trazo (Unai)
         ///////////////////////////////////////////////////////////////////// 
@@ -80,17 +88,10 @@ public class Painter : MonoBehaviour
         // que conforman el trazo
         if (OVRInput.Get(OVRInput.Button.PrimaryThumbstickLeft))
         {
-            Debug.Log("Izquierda Secondary");
-            if (radius - 0.002f >= 0)
+            if (radius - 0.00000001f >= 0)
             {
-                radius = radius - 0.002f;
-
-                Debug.Log(radius);
-                Vector3 position = indexFinger.transform.position;
-                // Por otro lado, para saber el tamaño actual del trazo
-                // llamamos a la siguiente funcion, encargada de ofrecer 
-                // una vista previa del trazo que tendrá el dibujo
-                VistaPreviaEsfera(position);
+                radius = radius / 1.01f;
+                vistaPrevia.transform.localScale = new Vector3(radius, radius, radius);
             }
 
         }
@@ -99,11 +100,8 @@ public class Painter : MonoBehaviour
         // derecha, el radio de las esferas aumentará
         if (OVRInput.Get(OVRInput.Button.PrimaryThumbstickRight))
         {
-            //Debug.Log("Izquierda Secondary");
-            radius = radius + 0.002f;
-            Debug.Log(radius);
-            Vector3 position = indexFinger.transform.position;
-            VistaPreviaEsfera(position);
+            radius = radius * 1.01f;
+            vistaPrevia.transform.localScale = new Vector3(radius, radius, radius);
         }
 
   
@@ -120,10 +118,13 @@ public class Painter : MonoBehaviour
     private void VistaPreviaEsfera(Vector3 position)
     {
         GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        sphere.GetComponent<Renderer>().material.color = new Color(0, 0, 1);
+        sphere.GetComponent<MeshRenderer>().material.color = new Color(0, 0, 1);
+        Color color = sphere.GetComponent<MeshRenderer>().material.color;
+        color.a = 0.3f;
+        sphere.GetComponent<MeshRenderer>().material.color = color;
         sphere.transform.localScale = new Vector3(radius, radius, radius);
         sphere.transform.position = position;
-        StartCoroutine(DestruirVistaPrevia(sphere));
+        //StartCoroutine(DestruirVistaPrevia(sphere));
     }
 
     /*****************************************************************************
